@@ -1,0 +1,394 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Student Daily Check-In</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow centered column for the student form; owner gets a wide Responses tab behind a tab bar. */
+:root {
+  --bg: #f1f5f7;
+  --surface: #ffffff;
+  --ink: #15232a;
+  --muted: #5a6c75;
+  --line: #d3dde2;
+  --accent: #0e7c86;
+  --accent-ink: #ffffff;
+  --flag: #b45309;
+  --flag-bg: #fdecd2;
+  --ok: #1f7a4d;
+  --font-display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f181c; --surface: #172329; --ink: #e6eef1; --muted: #93a6af; --line: #2b3b43;
+    --accent: #4cc3cd; --accent-ink: #082126; --flag: #f3b560; --flag-bg: #3a2a12; --ok: #6bd39c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f181c; --surface: #172329; --ink: #e6eef1; --muted: #93a6af; --line: #2b3b43;
+  --accent: #4cc3cd; --accent-ink: #082126; --flag: #f3b560; --flag-bg: #3a2a12; --ok: #6bd39c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.wrap.wide { max-width: 1040px; }
+h1 { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 6px 0 0; }
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+.tab { font: inherit; font-weight: 500; background: none; border: 0; color: var(--muted); padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab:focus-visible, .scale label:focus-within, .yn label:focus-within, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+form { display: flex; flex-direction: column; gap: 26px; }
+.field { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.field > legend, .field > label.q { font-weight: 600; padding: 0; margin-bottom: 2px; }
+.hint { color: var(--muted); font-size: 0.875rem; font-weight: 400; }
+input[type="text"], input[type="number"], textarea {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%;
+}
+input[type="number"] { max-width: 9rem; font-variant-numeric: tabular-nums; }
+textarea { min-height: 120px; resize: vertical; }
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.grp { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.grp svg { width: 100%; max-width: 60px; height: auto; display: block; }
+.pair { display: flex; gap: 4px; width: 100%; }
+.pair label { flex: 1; min-width: 0; }
+.scale label, .yn label { position: relative; }
+.scale input, .yn input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.scale span, .yn span {
+  display: flex; align-items: center; justify-content: center; min-height: 44px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); font-variant-numeric: tabular-nums; font-weight: 500;
+}
+.scale input:checked + span, .yn input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ends { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 0.8125rem; }
+.yn { display: flex; gap: 8px; }
+.yn label { flex: 0 0 96px; }
+.primary { font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 12px 22px; cursor: pointer; align-self: flex-start; }
+.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.secondary { font: inherit; font-weight: 500; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.msg { border-radius: 8px; padding: 12px 14px; border: 1px solid var(--line); background: var(--surface); }
+.msg.err { border-color: var(--flag); background: var(--flag-bg); color: var(--ink); }
+.msg.ok { border-color: var(--ok); }
+.tools { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.tools label { display: flex; gap: 8px; align-items: center; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.note { min-width: 14rem; max-width: 26rem; overflow-wrap: anywhere; }
+tr:last-child td { border-bottom: 0; }
+.chip { display: inline-block; font-size: 0.75rem; font-weight: 600; background: var(--flag-bg); color: var(--flag); border-radius: 999px; padding: 2px 8px; margin: 0 4px 4px 0; white-space: nowrap; }
+.empty { color: var(--muted); padding: 24px 12px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .scale span, .yn span { transition: background 0.12s, border-color 0.12s; } }
+</style>
+
+<div class="wrap" id="wrap">
+  <header>
+    <h1>Daily Check-In</h1>
+    <p class="sub">Take a minute to tell us how you're doing today. Only your guides can see your answers.</p>
+  </header>
+
+  <div class="tabs" id="tabs" role="tablist" hidden>
+    <button class="tab" role="tab" id="tab-form" aria-selected="true" type="button">Check in</button>
+    <button class="tab" role="tab" id="tab-resp" aria-selected="false" type="button">Responses</button>
+  </div>
+
+  <div id="notice" class="msg err" hidden></div>
+
+  <section id="formView">
+    <form id="f" novalidate>
+      <div class="field">
+        <label class="q" for="name">Name</label>
+        <input type="text" id="name" autocomplete="name" required>
+      </div>
+
+      <fieldset class="field" id="g-mood">
+        <legend>Mood right now <span class="hint">(1 to 10)</span></legend>
+        <div class="scale" data-name="mood"></div>
+        <div class="ends"><span>1 very low</span><span>10 great</span></div>
+      </fieldset>
+
+      <fieldset class="field" id="g-anxiety">
+        <legend>Anxiety right now <span class="hint">(1 to 10)</span></legend>
+        <div class="scale" data-name="anxiety"></div>
+        <div class="ends"><span>1 calm</span><span>10 very anxious</span></div>
+      </fieldset>
+
+      <div class="field">
+        <label class="q" for="sleep">How many hours of sleep did you get last night?</label>
+        <input type="number" id="sleep" min="0" max="24" step="0.5" inputmode="decimal" required>
+      </div>
+
+      <fieldset class="field" id="g-tired">
+        <legend>How tired are you? <span class="hint">(1 to 10)</span></legend>
+        <div class="scale" data-name="tired"></div>
+        <div class="ends"><span>1 wide awake</span><span>10 exhausted</span></div>
+      </fieldset>
+
+      <fieldset class="field" id="g-talk">
+        <legend>Is there anything you'd like to talk to Lia or Mary about?</legend>
+        <div class="yn">
+          <label><input type="radio" name="talk" value="Yes"><span>Yes</span></label>
+          <label><input type="radio" name="talk" value="No"><span>No</span></label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label class="q" for="note">Anything you'd like to let us know here? <span class="hint">(optional)</span></label>
+        <textarea id="note"></textarea>
+      </div>
+
+      <div id="formErr" class="msg err" hidden></div>
+      <button class="primary" id="submit" type="submit">Submit check-in</button>
+    </form>
+  </section>
+
+  <section id="doneView" hidden>
+    <div class="msg ok">
+      <strong>Thanks, your check-in is in.</strong>
+      <p style="margin:6px 0 0">If you need someone right now, find a staff member at the hub.</p>
+    </div>
+    <p><button class="secondary" id="again" type="button">Submit another</button></p>
+  </section>
+
+  <section id="respView" hidden>
+    <div class="tools">
+      <label><input type="checkbox" id="onlyFlagged"> Only show entries that need a look</label>
+      <button class="secondary" id="csv" type="button" hidden>Download CSV</button>
+    </div>
+    <div id="respStatus" class="hint"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>When</th><th>Name</th><th>Mood</th><th>Anxiety</th><th>Sleep (h)</th><th>Tired</th><th>Talk?</th><th>Note</th><th>Flags</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var db = null, uid = null, isAdmin = false, downloads = null, entriesAll = [];
+
+  // Five pain-scale style faces, each covering two numbers. Level 0 = best, 4 = worst.
+  var FACE_COLORS = ["#1fa85a", "#86cc55", "#f6cf4a", "#f59a47", "#de5a55"];
+  var MOUTH = ["M14 28 Q24 40 34 28", "M16 32 Q24 35 32 32", "M17 33.5 H31", "M16 36 Q24 31 32 36", "M14 38 Q24 28 34 38"];
+  var INK = "#1d2327";
+  var WATER = "#7ec8f0";
+  function stroke(d, w) { return '<path d="' + d + '" fill="none" stroke="' + INK + '" stroke-width="' + (w || 2.4) + '" stroke-linecap="round" stroke-linejoin="round"/>'; }
+  function dotEyes(ry) {
+    return '<ellipse cx="17" cy="19" rx="2.4" ry="' + ry + '" fill="' + INK + '"/><ellipse cx="31" cy="19" rx="2.4" ry="' + ry + '" fill="' + INK + '"/>';
+  }
+  function faceSvg(kind, level) {
+    var mouth, eyes, extra = "";
+    if (kind === "anxiety") {
+      mouth = ["M14 29 Q24 38 34 29", "M16 32 Q24 35 32 32", "M17 34 H31", "M16 36 Q24 31 32 36", "M15 36 Q18 31 21 36 T27 36 T33 36"][level];
+      if (level === 0) {
+        eyes = stroke("M13 20 Q17 15.5 21 20 M27 20 Q31 15.5 35 20");
+      } else if (level === 4) {
+        eyes = '<circle cx="17" cy="19" r="4.6" fill="#fff" stroke="' + INK + '" stroke-width="1.6"/><circle cx="31" cy="19" r="4.6" fill="#fff" stroke="' + INK + '" stroke-width="1.6"/>' +
+          '<circle cx="17.6" cy="19.6" r="1.8" fill="' + INK + '"/><circle cx="30.4" cy="19.6" r="1.8" fill="' + INK + '"/>';
+        extra = stroke("M9.5 12.5 L16.5 8.5 M38.5 12.5 L31.5 8.5", 2.2) +
+          '<path d="M40 14 Q43.5 19.5 40 22 Q36.5 19.5 40 14Z" fill="' + WATER + '"/>';
+      } else {
+        eyes = dotEyes(3.2);
+        if (level === 3) extra = stroke("M10.5 14 L16.5 11 M37.5 14 L31.5 11", 2.2);
+      }
+    } else if (kind === "tired") {
+      mouth = MOUTH[[0, 1, 2, 2, 3][level]];
+      if (level === 4) {
+        eyes = stroke("M13 20 Q17 24 21 20 M27 20 Q31 24 35 20");
+        extra = stroke("M35 6 H40 L35 12 H40", 1.8) + stroke("M41 13 H44 L41 17 H44", 1.4);
+      } else if (level >= 2) {
+        var lr = level === 2 ? 2.6 : 1.7;
+        eyes = '<path d="M14.6 19 A2.4 ' + lr + ' 0 0 0 19.4 19Z M28.6 19 A2.4 ' + lr + ' 0 0 0 33.4 19Z" fill="' + INK + '"/>' +
+          stroke("M13.6 19 H20.4 M27.6 19 H34.4", 2.2);
+      } else {
+        eyes = dotEyes(3.2);
+      }
+    } else {
+      mouth = MOUTH[level];
+      eyes = dotEyes(3.2);
+      if (level === 4) extra = '<path d="M13 25 Q16.5 30.5 13 33 Q9.5 30.5 13 25Z" fill="' + WATER + '"/>';
+    }
+    return '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="23" fill="' + FACE_COLORS[level] + '"/>' +
+      eyes + stroke(mouth) + extra + '</svg>';
+  }
+
+  // Build the scales: five groups, each a face over two number buttons (1-2, 3-4, ... 9-10).
+  Array.prototype.forEach.call(document.querySelectorAll(".scale"), function (box) {
+    var name = box.getAttribute("data-name");
+    for (var g = 0; g < 5; g++) {
+      var level = name === "mood" ? 4 - g : g;
+      var grp = document.createElement("div"); grp.className = "grp";
+      grp.innerHTML = faceSvg(name, level);
+      var pair = document.createElement("div"); pair.className = "pair";
+      for (var k = 1; k <= 2; k++) {
+        var n = g * 2 + k;
+        var l = document.createElement("label");
+        var inp = document.createElement("input");
+        inp.type = "radio"; inp.name = name; inp.value = String(n);
+        inp.setAttribute("aria-label", name + " " + n);
+        var s = document.createElement("span"); s.textContent = String(n);
+        l.appendChild(inp); l.appendChild(s); pair.appendChild(l);
+      }
+      grp.appendChild(pair); box.appendChild(grp);
+    }
+  });
+
+  function show(el, on) { el.hidden = !on; }
+  function notice(msg) { var n = $("notice"); n.textContent = msg || ""; show(n, !!msg); }
+  function picked(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : null; }
+
+  function setTab(which) {
+    var f = which === "form";
+    $("tab-form").setAttribute("aria-selected", f ? "true" : "false");
+    $("tab-resp").setAttribute("aria-selected", f ? "false" : "true");
+    show($("formView"), f && $("doneView").hidden);
+    show($("respView"), !f);
+    $("wrap").classList.toggle("wide", !f);
+  }
+  $("tab-form").onclick = function () { setTab("form"); show($("formView"), $("doneView").hidden); };
+  $("tab-resp").onclick = function () { setTab("resp"); show($("formView"), false); show($("doneView"), false); };
+
+  function flagsFor(e) {
+    var f = [];
+    if (e.talk === "Yes") f.push("Wants to talk");
+    if (e.anxiety >= 8) f.push("Anxiety 8+");
+    if (e.mood <= 3) f.push("Mood 3 or below");
+    return f;
+  }
+
+  function fmtWhen(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+
+  function td(text, cls) { var c = document.createElement("td"); if (cls) c.className = cls; c.textContent = text == null ? "" : String(text); return c; }
+
+  function renderRows() {
+    var body = $("rows"); body.textContent = "";
+    var only = $("onlyFlagged").checked;
+    var list = entriesAll.filter(function (e) { return !only || flagsFor(e).length; });
+    if (!list.length) {
+      var tr = document.createElement("tr"), c = document.createElement("td");
+      c.colSpan = 9; c.className = "empty";
+      c.textContent = entriesAll.length ? "No entries need a look." : "No check-ins yet. They will appear here as students submit them.";
+      tr.appendChild(c); body.appendChild(tr); return;
+    }
+    list.forEach(function (e) {
+      var tr = document.createElement("tr");
+      tr.appendChild(td(fmtWhen(e.at), "n"));
+      tr.appendChild(td(e.name));
+      tr.appendChild(td(e.mood, "n"));
+      tr.appendChild(td(e.anxiety, "n"));
+      tr.appendChild(td(e.sleep, "n"));
+      tr.appendChild(td(e.tired, "n"));
+      tr.appendChild(td(e.talk));
+      tr.appendChild(td(e.note, "note"));
+      var fc = document.createElement("td");
+      flagsFor(e).forEach(function (t) { var s = document.createElement("span"); s.className = "chip"; s.textContent = t; fc.appendChild(s); });
+      tr.appendChild(fc);
+      body.appendChild(tr);
+    });
+  }
+  $("onlyFlagged").onchange = renderRows;
+
+  function csvCell(v) { var s = v == null ? "" : String(v); return '"' + s.replace(/"/g, '""') + '"'; }
+  $("csv").onclick = function () {
+    var head = ["Submitted", "Name", "Mood", "Anxiety", "Sleep hours", "Tired", "Wants to talk", "Note"];
+    var lines = [head.map(csvCell).join(",")];
+    entriesAll.forEach(function (e) {
+      lines.push([e.at, e.name, e.mood, e.anxiety, e.sleep, e.tired, e.talk, e.note].map(csvCell).join(","));
+    });
+    downloads.save({ filename: "ms-checkins.csv", data: lines.join("\r\n") }).catch(function () {});
+  };
+
+  function startResponses() {
+    var timer = setTimeout(function () { $("respStatus").textContent = "Responses are taking a while to load."; }, 10000);
+    db.collection("checkins").onSnapshot(function (snap) {
+      clearTimeout(timer);
+      var all = [];
+      snap.docs.forEach(function (d) {
+        var data = d.data() || {};
+        (data.entries || []).forEach(function (e) { all.push(e); });
+      });
+      all.sort(function (a, b) { return a.at < b.at ? 1 : a.at > b.at ? -1 : 0; });
+      entriesAll = all;
+      $("respStatus").textContent = all.length + (all.length === 1 ? " check-in" : " check-ins") + " from " + snap.size + (snap.size === 1 ? " student" : " students");
+      renderRows();
+    }, function () {
+      clearTimeout(timer);
+      $("respStatus").textContent = "Responses can't be loaded in this view.";
+    });
+  }
+
+  function formError(msg) { var e = $("formErr"); e.textContent = msg || ""; show(e, !!msg); }
+
+  $("f").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    formError("");
+    var name = $("name").value.trim();
+    var anxiety = picked("anxiety"), mood = picked("mood"), tired = picked("tired"), talk = picked("talk");
+    var sleepRaw = $("sleep").value.trim(), sleep = parseFloat(sleepRaw);
+    if (!name) return formError("Please enter your name.");
+    if (!anxiety) return formError("Please pick an anxiety number from 1 to 10.");
+    if (!mood) return formError("Please pick a mood number from 1 to 10.");
+    if (sleepRaw === "" || isNaN(sleep) || sleep < 0 || sleep > 24) return formError("Please enter hours of sleep, between 0 and 24.");
+    if (!tired) return formError("Please pick how tired you are, from 1 to 10.");
+    if (!talk) return formError("Please answer Yes or No: is there anything you'd like to talk about?");
+    if (!db || !uid) return formError("This form can only save when you are signed in.");
+
+    var entry = { at: new Date().toISOString(), name: name, anxiety: +anxiety, mood: +mood, sleep: sleep, tired: +tired, talk: talk, note: $("note").value.trim() };
+    var btn = $("submit"); btn.disabled = true; btn.textContent = "Sending…";
+    var ref = db.doc("checkins/" + uid);
+    ref.get().then(function (snap) {
+      var prev = snap.exists && snap.data() && Array.isArray(snap.data().entries) ? snap.data().entries : [];
+      return ref.set({ uid: uid, name: name, entries: prev.concat([entry]).slice(-400) });
+    }).then(function () {
+      $("f").reset();
+      show($("formView"), false); show($("doneView"), true);
+    }).catch(function () {
+      formError("Your check-in didn't save. Try again, and if it keeps happening tell a staff member.");
+    }).then(function () { btn.disabled = false; btn.textContent = "Submit check-in"; });
+  });
+
+  $("again").onclick = function () { show($("doneView"), false); show($("formView"), true); window.scrollTo(0, 0); };
+
+  (async function init() {
+    try {
+      db = await claude.use("db");
+      var user = await claude.use("user");
+      downloads = await claude.use("downloads");
+      if (user) {
+        uid = await user.id();
+        isAdmin = user.canEdit();
+        if (user.can("data.write") === false && !isAdmin) {
+          notice("You can view this form but not submit it. Ask staff to give you access.");
+          $("submit").disabled = true;
+        }
+      }
+    } catch (e) {}
+    if (!db || !uid) {
+      notice("Sign in to submit your check-in.");
+      $("submit").disabled = true;
+    }
+    if (db && isAdmin) {
+      show($("tabs"), true);
+      if (downloads) show($("csv"), true);
+      startResponses();
+    }
+  })();
+})();
+</script>
+
+</body></html>
